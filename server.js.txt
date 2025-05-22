@@ -1,0 +1,315 @@
+const express = require('express');
+const cors = require('cors');
+const mysql = require('mysql2/promise'); 
+const app = express();
+const port = 5000;
+const bcrypt = require('bcryptjs');
+
+app.use(cors());
+app.use(express.json());
+
+let db;
+
+// Connexion à la base de données
+async function startServer() {
+  try {
+    db = await mysql.createConnection({
+      host: 'localhost',
+      user: 'root',
+      password: '',
+      database: 'la_poste_kantaoui'
+    });
+    console.log('✅ Connecté à la base de données MySQL');
+    app.listen(port, () => {
+      console.log(`🚀 Serveur backend démarré sur http://localhost:${port}`);
+    });
+  } catch (err) {
+    console.error('❌ Erreur de connexion à la base de données :', err.message);
+  }
+}
+
+
+// Fonction pour vérifier le mot de passe
+function verifierMotDePasse(identifiant, motDePasseEntré) {
+  // Requête pour récupérer le mot de passe haché de la base de données
+  connection.query('SELECT mtp FROM login WHERE identifiant = ?', [identifiant], (error, results) => {
+    if (error) {
+      console.log('Erreur SQL:', error);
+      return;
+    }
+
+    if (results.length > 0) {
+      const motDePasseHaché = results[0].mtp;
+
+      // Comparer le mot de passe haché avec celui entré par l'utilisateur
+      bcrypt.compare(motDePasseEntré, motDePasseHaché, (err, isMatch) => {
+        if (err) {
+          console.log('Erreur de comparaison:', err);
+          return;
+        }
+
+        if (isMatch) {
+          console.log('Mot de passe correct !');
+          // L'utilisateur peut se connecter ici
+        } else {
+          console.log('Mot de passe incorrect.');
+        }
+      });
+    } else {
+      console.log('Utilisateur non trouvé.');
+    }
+  });
+}
+
+// Appeler la fonction de vérification avec un identifiant et un mot de passe
+verifierMotDePasse('monuser', 'azerty123');
+
+
+
+// Routes
+
+// ➔ Envoi de colis
+app.post('/api/envoi', async (req, res) => {
+  const { expediteur, destinataire, numeroTel, adresseLivraison, poids } = req.body;
+  try {
+    const sql = 'INSERT INTO colis_envoi (expediteur, destinataire, numeroTel, adresseLivraison, poids) VALUES (?, ?, ?, ?, ?)';
+    await db.execute(sql, [expediteur, destinataire, numeroTel, adresseLivraison, poids]);
+    res.status(200).json({ message: "Colis envoyé enregistré avec succès !" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erreur serveur lors de l'enregistrement de l'envoi." });
+  }
+});
+
+// ➔ Réception de colis
+app.post('/api/reception', async (req, res) => {
+  const { destinataire, expediteur, numeroTel, adresse, suivi } = req.body;
+  try {
+    const sql = 'INSERT INTO colis_reception (destinataire, expediteur, numeroTel, adresse, suivi) VALUES (?, ?, ?, ?, ?)';
+    await db.execute(sql, [destinataire, expediteur, numeroTel, adresse, suivi]);
+    res.status(200).json({ message: "Réception enregistrée avec succès !" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erreur serveur lors de l'enregistrement de la réception." });
+  }
+});
+
+// ➔ Création de réclamation
+app.post('/api/reclamations', async (req, res) => {
+  const { numeroReclamation, typeReclamation, description } = req.body;
+  if (!numeroReclamation || !typeReclamation || !description) {
+    return res.status(400).json({ message: 'Tous les champs sont requis.' });
+  }
+  try {
+    const sql = 'INSERT INTO reclamations (numeroReclamation, typeReclamation, description, status) VALUES (?, ?, ?, ?)';
+    await db.execute(sql, [numeroReclamation, typeReclamation, description, 'Créée']);
+    res.status(200).json({ message: "Réclamation créée avec succès !" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erreur serveur lors de la création de la réclamation." });
+  }
+});
+
+// ➔ Suivi d'une réclamation
+app.get('/api/reclamations/:numeroReclamation', async (req, res) => {
+  const { numeroReclamation } = req.params;
+  try {
+    const sql = 'SELECT * FROM reclamations WHERE numeroReclamation = ?';
+    const [rows] = await db.execute(sql, [numeroReclamation]);
+    if (rows.length === 0) {
+      return res.status(404).json({ message: 'Réclamation non trouvée.' });
+    }
+    res.status(200).json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erreur serveur lors du suivi de la réclamation." });
+  }
+});
+
+// ➔ Clôture d'une réclamation
+app.patch('/api/reclamations/:numeroReclamation', async (req, res) => {
+  const { numeroReclamation } = req.params;
+  const { status } = req.body;
+  if (status !== 'Clôturée') {
+    return res.status(400).json({ message: 'Le statut de la réclamation doit être "Clôturée".' });
+  }
+  try {
+    const sql = 'UPDATE reclamations SET status = ? WHERE numeroReclamation = ?';
+    const [result] = await db.execute(sql, [status, numeroReclamation]);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'Réclamation non trouvée.' });
+    }
+    res.status(200).json({ message: "Réclamation clôturée avec succès !" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erreur serveur lors de la clôture de la réclamation." });
+  }
+});
+
+
+// ➔ Ajouter un compte
+app.post('/api/gerercomptes', async (req, res) => {
+  const { nom, prenom, identifiant, motDePasse, role } = req.body;
+  if (!nom || !prenom || !identifiant || !motDePasse || !role) {
+    return res.status(400).json({ message: 'Tous les champs sont requis.' });
+  }
+  try {
+    const sql = 'INSERT INTO gerercomptes (nom, prenom, identifiant, motDePasse, role) VALUES (?, ?, ?, ?, ?)';
+    await db.execute(sql, [nom, prenom, identifiant, motDePasse, role]);
+    res.status(200).json({ message: 'Compte ajouté avec succès.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erreur serveur lors de l'ajout du compte." });
+  }
+});
+
+
+// ➔ Planification de congés
+app.post('/api/planifierconges', async (req, res) => {
+  const { employe, dateDebut, dateFin } = req.body;
+  if (!employe || !dateDebut || !dateFin) {
+    return res.status(400).json({ message: 'Tous les champs sont requis.' });
+  }
+  try {
+    const sql = 'INSERT INTO conges (employe, dateDebut, dateFin) VALUES (?, ?, ?)';
+    await db.execute(sql, [employe, dateDebut, dateFin]);
+    res.status(200).json({ message: 'Congé planifié avec succès.' });
+  } catch (err) {
+    console.error('Erreur lors de l\'insertion des congés :', err);
+    res.status(500).json({ message: "Erreur serveur lors de l'enregistrement du congé." });
+  }
+});
+
+// ➔ Envoi de mandat
+app.post('/api/mandats/envoi', async (req, res) => {
+  const { expediteur, beneficiaire, type, montant, numeroTel, dateEnvoi } = req.body;
+  if (!expediteur || !beneficiaire || !type || !montant || !numeroTel || !dateEnvoi) {
+    return res.status(400).json({ message: 'Tous les champs sont obligatoires.' });
+  }
+  try {
+    const sql = 'INSERT INTO mandats_envoi (expediteur, beneficiaire, type, montant, numeroTel, date_envoi) VALUES (?, ?, ?, ?, ?, ?)';
+    const [result] = await db.execute(sql, [expediteur, beneficiaire, type, montant, numeroTel, dateEnvoi]);
+    res.status(201).json({ message: 'Mandat envoyé avec succès.', mandatId: result.insertId });
+  } catch (err) {
+    console.error('Erreur serveur lors de l\'envoi du mandat:', err);
+    res.status(500).json({ message: 'Erreur serveur lors de l\'envoi du mandat.' });
+  }
+});
+
+// ➔ Réception de mandat
+app.post('/api/mandats/reception', async (req, res) => {
+  const { expediteur, beneficiaire, type, montant, numeroTel, cin } = req.body;
+  if (!expediteur || !beneficiaire || !type || !montant || !numeroTel || !cin) {
+    return res.status(400).json({ message: 'Tous les champs sont obligatoires.' });
+  }
+  try {
+    const sql = 'INSERT INTO mandats_reception (expediteur, beneficiaire, type, montant, numeroTel, cin) VALUES (?, ?, ?, ?, ?, ?)';
+    await db.execute(sql, [expediteur, beneficiaire, type, montant, numeroTel, cin]);
+    res.status(201).json({ message: 'Réception de mandat enregistrée avec succès.' });
+  } catch (err) {
+    console.error('Erreur serveur lors de la réception du mandat:', err);
+    res.status(500).json({ message: 'Erreur serveur lors de la réception du mandat.' });
+  }
+});
+
+
+// Route gestion de paiement chef d'agence 
+
+  app.post('/paiement', async (req, res) => {
+    const { montant, date } = req.body;
+  
+    // Vérification des données reçues
+    if (!montant || !date) {
+      return res.status(400).json({ message: 'Tous les champs doivent être remplis.' });
+    }
+    console.log('Reçu :', { montant,date });
+    try {
+      // Insérer le paiement dans la base de données
+      const sql = 'INSERT INTO paiements (montant, date) VALUES (?, ?)';
+      await db.execute(sql, [montant, date]);
+  
+      // Réponse de succès
+      res.status(200).json({ message: '✅ Paiement effectué avec succès !' });
+    } catch (err) {
+      // Erreur serveur
+      console.error('Erreur serveur lors du paiement:', err);
+      res.status(500).json({ message: '❌ Erreur serveur lors du paiement.' });
+    }
+  });
+
+
+
+
+// ➔ Paiement de factures
+app.post('/api/paiementfactures', async (req, res) => {
+  const { nomClient, prenomClient, numeroTel, email, typeFacture, fournisseur, numeroFacture, montant, modePaiement } = req.body;
+
+  console.log('Données reçues du front-end :', { nomClient, prenomClient, numeroTel, email, typeFacture, fournisseur, numeroFacture, montant, modePaiement });
+
+  // Vérifier que tous les champs sont présents
+  if (!nomClient || !prenomClient || !numeroTel || !email || !typeFacture || !fournisseur || !numeroFacture || !montant || !modePaiement) {
+    return res.status(400).json({ message: 'Tous les champs sont requis.' });
+  }
+
+  try {
+    const sql = 'INSERT INTO paiementfactures (nomClient, prenomClient, numeroTel, email, typeFacture, fournisseur, numeroFacture, montant, modePaiement) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
+    
+    
+    await db.execute(sql, [nomClient, prenomClient, numeroTel, email, typeFacture, fournisseur, numeroFacture, montant, modePaiement]);
+
+    res.status(201).json({ message: 'Paiement ajouté avec succès.' });
+  } catch (err) {
+    console.error('Erreur lors de l\'insertion du paiement:', err);
+    res.status(500).json({ message: 'Erreur serveur lors de l\'ajout du paiement.' });
+  }
+});
+
+
+
+// ➔ Gestion du pointage
+app.post('/api/gererpointage', async (req, res) => {
+  const { employe, date, statut } = req.body;
+
+  console.log("Données reçues pour insertion :", { employe, date, statut });
+
+  if (!employe || !date || !statut ) {
+    return res.status(400).json({ message: 'Tous les champs sont requis.' });
+  }
+  try {
+    const sql = 'INSERT INTO gererpointage (employe, date, statut) VALUES (?, ?, ?)';
+    await db.execute(sql, [employe, date, statut]);
+    res.status(200).json({ message: 'Pointage enregistré avec succès.' });
+  } catch (err) {
+    console.error('Erreur SQL :', err.message);
+    res.status(500).json({ message: 'Erreur serveur : ' + err.message });
+  }
+});
+
+//route de bcrypt pour le hachage des login
+
+app.post('/api/login', async (req, res) => {
+  const { identifiant, motDePasse } = req.body;
+
+  try {
+    const [rows] = await db.execute('SELECT * FROM login WHERE identifiant = ?', [identifiant]);
+
+    if (rows.length === 0) {
+      return res.status(401).json({ message: 'Identifiant incorrect.' });
+    }
+
+    const utilisateur = rows[0];
+
+    // Vérification du mot de passe haché
+    const isMatch = await bcrypt.compare(motDePasse, utilisateur.mtp);
+
+    if (isMatch) {
+      return res.status(200).json({ message: 'Connexion réussie.' });
+    } else {
+      return res.status(401).json({ message: 'Mot de passe incorrect.' });
+    }
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Erreur serveur lors de la connexion.' });
+  }
+});
