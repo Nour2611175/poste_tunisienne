@@ -493,15 +493,12 @@ app.get('/api/logs', async (req, res) => {
 
 
 
-// ✅ Fonction pour démarrer le serveur HTTPS
+// ✅ Fonction pour démarrer le serveur (HTTP uniquement pour Render)
 function startServer() {
-  const options = {
-    key: fs.readFileSync('key.pem'),
-    cert: fs.readFileSync('cert.pem'),
-  };
+  const PORT = process.env.PORT || 3000;
 
-  https.createServer(options, app).listen(5000, () => {
-    console.log('🔐 Serveur HTTPS sur https://localhost:5000');
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`✅ Serveur lancé sur http://0.0.0.0:${PORT}`);
   });
 }
 
