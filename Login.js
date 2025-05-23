@@ -5,6 +5,7 @@ import './Login.css';
 import logo from './assets/logo-poste.png';
 import Chatbot from './Chatbot'; // Import du chatbot
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
 function Login() {
   const [username, setUsername] = useState('');
@@ -25,7 +26,7 @@ function Login() {
     e.preventDefault();
     if (attempts <= 1) return setError("Veuillez réessayer plus tard.");
     try {
-      const res = await axios.post('https://localhost:5000/login', { username, password });
+      const res = await axios.post(`${API_BASE_URL}/login`, { username, password });
       setRole(res.data.role);
       setStep('otp');
       setError('');
@@ -38,7 +39,7 @@ function Login() {
   const handleOtpValidation = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post('https://localhost:5000/verify-otp', { username, code: otp });
+      const res = await axios.post(`${API_BASE_URL}/verify-otp`, { username, code: otp });
       if (res.status === 200) {
         if (role === 'guichetier') navigate('/guichetier');
         else if (role === 'chefagence') navigate('/chef-agence');
@@ -93,7 +94,7 @@ function Login() {
       </div>
       <footer className="login-footer">© 2025 Poste Tunisienne – Tous droits réservés.</footer>
       <Chatbot />
-       </>
+    </>
   );
 }
 
