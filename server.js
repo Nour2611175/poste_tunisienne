@@ -5,27 +5,37 @@ const bcrypt = require('bcryptjs');
 const https = require('https');
 const fs = require('fs');
 
-
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const mysql = require('mysql2');
-const connection = mysql.createConnection({
-  host: 'sql.freedb.tech',
-  user: 'freedb_nour12',
-  password: '9twXWC$C3n&tvj$',
-  database: 'freedb_poste12',
-  port: 3306
-});
+let connection;
 
-connection.connect((err) => {
-  if (err) {
-    console.error('Erreur de connexion :', err);
-  } else {
-    console.log('Connecté à la base de données !');
+async function startServer() {
+  try {
+    connection = await mysql.createConnection({
+      host: 'sql.freedb.tech',
+      user: 'freedb_nour12',
+      password: '9twXWC$C3n&tvj$',
+      database: 'freedb_poste12',
+      port: 3306
+    });
+
+    // Message de confirmation
+    console.log('✅ Connecté à MySQL');
+
+    // Démarrage du serveur
+    const port = 3000;
+    app.listen(port, () => {
+      console.log(`Serveur lancé sur le port ${port}`);
+    });
+
+  } catch (err) {
+    console.error('Erreur de connexion à la base de données :', err);
   }
-});
+}
+
+
 
 
 // route anomalie avec ia
