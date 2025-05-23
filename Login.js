@@ -7,6 +7,7 @@ import Chatbot from './Chatbot'; // Import du chatbot
 
 // URL de base du backend
 const backendURL = 'https://poste-tunisienne.onrender.com';
+const res = await axios.post(`${BACKEND_URL}/login`, { username, password });
 
 function Login() {
   const [username, setUsername] = useState('');
