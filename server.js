@@ -5,6 +5,7 @@ const bcrypt = require('bcryptjs');
 const https = require('https');
 const fs = require('fs');
 
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -21,17 +22,16 @@ async function startServer() {
       port: 3306
     });
 
-    // Message de confirmation
     console.log('✅ Connecté à MySQL');
 
-    // Démarrage du serveur
-    const port = 3000;
-    app.listen(port, () => {
-      console.log(`Serveur lancé sur le port ${port}`);
+    const PORT = process.env.PORT || 3000;
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`✅ Serveur lancé sur le port ${PORT}`);
     });
 
   } catch (err) {
-    console.error('Erreur de connexion à la base de données :', err);
+    console.error('❌ Erreur de connexion à la base de données :', err.message);
+    process.exit(1); // Arrête l'app si la BDD échoue
   }
 }
 
