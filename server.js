@@ -11,15 +11,14 @@ app.use(cors());
 app.use(express.json());
 
 let db;
-async function connectToDatabase() {
-  db = await mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: '',
-    database: 'la_poste_kantaoui',
-  });
-  console.log('✅ Connecté à MySQL');
-}
+const mysql = require('mysql2');
+const connection = mysql.createConnection({
+  host: 'sql.freedb.tech',
+  user: 'freedb_nour12',
+  password: '9twXWC$C3n&tvj$',
+  database: 'freedb_poste12',
+  port: 3306
+});
 connectToDatabase();
 
 
