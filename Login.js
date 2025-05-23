@@ -5,7 +5,8 @@ import './Login.css';
 import logo from './assets/logo-poste.png';
 import Chatbot from './Chatbot'; // Import du chatbot
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+// URL de base du backend
+const backendURL = 'https://poste-tunisienne.onrender.com';
 
 function Login() {
   const [username, setUsername] = useState('');
@@ -26,7 +27,7 @@ function Login() {
     e.preventDefault();
     if (attempts <= 1) return setError("Veuillez réessayer plus tard.");
     try {
-      const res = await axios.post(`${API_BASE_URL}/login`, { username, password });
+      const res = await axios.post(`${backendURL}/login`, { username, password });
       setRole(res.data.role);
       setStep('otp');
       setError('');
@@ -39,7 +40,7 @@ function Login() {
   const handleOtpValidation = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post(`${API_BASE_URL}/verify-otp`, { username, code: otp });
+      const res = await axios.post(`${backendURL}/verify-otp`, { username, code: otp });
       if (res.status === 200) {
         if (role === 'guichetier') navigate('/guichetier');
         else if (role === 'chefagence') navigate('/chef-agence');
@@ -65,12 +66,31 @@ function Login() {
                 <form onSubmit={handleSubmit}>
                   <div className="input-group">
                     <span className="icon">👤</span>
-                    <input type="text" placeholder="Nom d'utilisateur" value={username} onChange={(e) => setUsername(e.target.value)} required />
+                    <input
+                      type="text"
+                      placeholder="Nom d'utilisateur"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      required
+                    />
                   </div>
                   <div className="input-group">
                     <span className="icon">🔒</span>
-                    <input type={showPassword ? 'text' : 'password'} placeholder="Mot de passe" value={password} onChange={(e) => setPassword(e.target.value)} required />
-                    <span className="toggle-password" onClick={() => setShowPassword(!showPassword)}>{showPassword ? '🙈' : '👁️'}</span>
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="Mot de passe"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                    />
+                    <span
+                      className="toggle-password"
+                      onClick={() => setShowPassword(!showPassword)}
+                      style={{ cursor: 'pointer' }}
+                      aria-label={showPassword ? 'Cacher mot de passe' : 'Afficher mot de passe'}
+                    >
+                      {showPassword ? '🙈' : '👁️'}
+                    </span>
                   </div>
                   <button type="submit">Se connecter</button>
                   <p className="attempts">Essais restants : {attempts}</p>
@@ -83,7 +103,13 @@ function Login() {
                 <form onSubmit={handleOtpValidation}>
                   <div className="input-group">
                     <span className="icon">🔐</span>
-                    <input type="text" placeholder="Code OTP" value={otp} onChange={(e) => setOtp(e.target.value)} required />
+                    <input
+                      type="text"
+                      placeholder="Code OTP"
+                      value={otp}
+                      onChange={(e) => setOtp(e.target.value)}
+                      required
+                    />
                   </div>
                   <button type="submit">Valider OTP</button>
                 </form>
