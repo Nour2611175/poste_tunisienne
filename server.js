@@ -10,7 +10,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-let db;
 const mysql = require('mysql2');
 const connection = mysql.createConnection({
   host: 'sql.freedb.tech',
@@ -19,7 +18,14 @@ const connection = mysql.createConnection({
   database: 'freedb_poste12',
   port: 3306
 });
-connectToDatabase();
+
+connection.connect((err) => {
+  if (err) {
+    console.error('Erreur de connexion :', err);
+  } else {
+    console.log('Connecté à la base de données !');
+  }
+});
 
 
 // route anomalie avec ia
