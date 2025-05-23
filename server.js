@@ -41,6 +41,8 @@ async function startServer() {
       port: 3306
     });
 
+    global.db = connection;  // Ajout pour rendre global accessible (optionnel)
+
     console.log('✅ Connecté à MySQL');
 
     const PORT = process.env.PORT || 3000;
@@ -53,10 +55,6 @@ async function startServer() {
     process.exit(1);
   }
 }
-
-startServer();
-
-module.exports = { app, connection }; // exporte si besoin
 
 
 
