@@ -7,7 +7,9 @@ const fs = require('fs');
 
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: 'https://monfrontend.netlify.app',
+}));
 app.use(express.json());
 
 let connection;
