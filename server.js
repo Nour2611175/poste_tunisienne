@@ -5,11 +5,28 @@ const bcrypt = require('bcryptjs');
 const https = require('https');
 const fs = require('fs');
 
-
 const app = express();
+
+// Liste des origines autorisées (URLs de ton frontend)
+const allowedOrigins = [
+  'https://kaleidoscopic-biscotti-29dfe1.netlify.app',
+  'https://monfrontend.netlify.app',
+  'http://localhost:3000' // si tu fais du dev local
+];
+
 app.use(cors({
-  origin: 'https://monfrontend.netlify.app',
+  origin: function(origin, callback) {
+    // Autorise les requêtes sans origin (ex: Postman, backend-to-backend)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = `Le CORS policy ne permet pas cette origine : ${origin}`;
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
+  credentials: true
 }));
+
 app.use(express.json());
 
 let connection;
@@ -33,9 +50,14 @@ async function startServer() {
 
   } catch (err) {
     console.error('❌ Erreur de connexion à la base de données :', err.message);
-    process.exit(1); // Arrête l'app si la BDD échoue
+    process.exit(1);
   }
 }
+
+startServer();
+
+module.exports = { app, connection }; // exporte si besoin
+
 
 
 
