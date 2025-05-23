@@ -1,18 +1,20 @@
 const mysql = require('mysql2');
+require('dotenv').config(); // Pour charger les variables d'environnement
 
 const connection = mysql.createConnection({
-  host: 'localhost',  // Adresse de ton serveur MySQL
-  user: 'ton_utilisateur',  // Ton nom d'utilisateur MySQL
-  password: 'ton_mot_de_passe',  // Ton mot de passe MySQL
-  database: 'la_poste_kantaoui'  // Ton nom de base de données
+  host:sql.freedb.tech,     
+  user:freedb_nour12,       
+  password:9twXWC$C3n&tvj$,
+  database:freedb_poste12E,  
+  port:3306      
 });
 
 connection.connect((err) => {
   if (err) {
-    console.error('Erreur de connexion à la base de données: ', err.message);
+    console.error('❌ Erreur de connexion à la base de données :', err.message);
   } else {
-    console.log('Connecté à la base de données MySQL');
+    console.log('✅ Connecté à la base de données MySQL');
   }
 });
 
-module.exports = connection;  // Exporte la connexion pour l'utiliser ailleurs
+module.exports = connection;
